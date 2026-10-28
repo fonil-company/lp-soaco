@@ -23,7 +23,7 @@ O formulário envia o lead para `/api/lead` no próprio domínio. O Nginx repass
 Payload enviado:
 
 ```json
-{ "phone": "86999999999", "name": "Nome", "city": "Teresina", "state": "PI" }
+{ "phone": "86999999999", "name": "Nome", "document": "12345678000190", "city": "Teresina", "state": "PI" }
 ```
 
 Depois do envio, o visitante segue para o WhatsApp mesmo se o CRM falhar. Na falha, o console mostra `[CRM] falha ao enviar lead` e o dataLayer recebe `crm_lead_error`.

@@ -157,7 +157,9 @@
   .form{background:var(--navy);color:var(--white);border-radius:14px;padding:clamp(24px,4vw,40px);box-shadow:0 30px 60px -30px rgba(5,29,89,.55);border-top:6px solid var(--gold)}
   .form h3{font-family:var(--f-title);font-weight:400;text-transform:uppercase;font-size:1.15rem;margin:0 0 24px;color:var(--gold)}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  .row--city{grid-template-columns:1fr 110px}
+  .row--city{grid-template-columns:1fr 160px}
+  .field .err{display:none;font-size:.75rem;font-weight:600;color:#FF8A8A}
+  .field.invalid .err{display:block}
   .field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
   .field label{font-size:.82rem;font-weight:600;letter-spacing:.02em;color:rgba(255,255,255,.85)}
   .field input,.field select{width:100%;font:inherit;font-size:1rem;color:var(--navy);background:var(--white);border:2px solid transparent;border-radius:8px;padding:.8em .95em;transition:border-color .2s}
@@ -191,7 +193,7 @@
   @media (max-width:720px){
     .b-grid{grid-template-columns:1fr}
     .row{grid-template-columns:1fr;gap:0}
-    .row--city{grid-template-columns:1fr 96px;gap:12px}
+    .row--city{grid-template-columns:1fr 152px;gap:12px}
     .car-slide{aspect-ratio:4/3}
     .car-slide figcaption{padding:40px 16px 14px;font-size:.9rem}
     .car-btn{width:40px;height:40px}
@@ -427,20 +429,24 @@
             <input id="cidade" name="cidade" type="text" autocomplete="address-level2" required placeholder="Sua cidade">
           </div>
           <div class="field">
-            <label for="uf">UF</label>
+            <label for="uf">Estado</label>
             <select id="uf" name="uf" autocomplete="address-level1" required>
-              <option value="" disabled selected>UF</option>
-              <option>AC</option><option>AL</option><option>AP</option><option>AM</option><option>BA</option><option>CE</option>
-              <option>DF</option><option>ES</option><option>GO</option><option>MA</option><option>MT</option><option>MS</option>
-              <option>MG</option><option>PA</option><option>PB</option><option>PR</option><option>PE</option><option>PI</option>
-              <option>RJ</option><option>RN</option><option>RS</option><option>RO</option><option>RR</option><option>SC</option>
-              <option>SP</option><option>SE</option><option>TO</option>
+              <option value="" disabled selected>Selecione</option>
+              <option value="PI">Piauí</option>
+              <option value="MA">Maranhão</option>
             </select>
           </div>
         </div>
-        <div class="field">
-          <label for="empresa">Empresa</label>
-          <input id="empresa" name="empresa" type="text" autocomplete="organization" placeholder="Nome da empresa">
+        <div class="row">
+          <div class="field">
+            <label for="empresa">Empresa</label>
+            <input id="empresa" name="empresa" type="text" autocomplete="organization" placeholder="Nome da empresa">
+          </div>
+          <div class="field">
+            <label for="cnpj">CNPJ</label>
+            <input id="cnpj" name="cnpj" type="text" autocapitalize="characters" autocomplete="off" required placeholder="00.000.000/0000-00" maxlength="18">
+            <span class="err">CNPJ inválido</span>
+          </div>
         </div>
         <div class="field">
           <label for="segmento">Segmento</label>
@@ -590,14 +596,38 @@
     wpp.value = out;
   });
 
+  // ---- Máscara e validação de CNPJ (numérico ou alfanumérico, padrão Receita 2026) ----
+  var cnpj = $('cnpj');
+  var cnpjClean = function(v){ return v.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,14); };
+  cnpj.addEventListener('input', function(){
+    var c = cnpjClean(cnpj.value), out = c.slice(0,2);
+    if (c.length > 2) out += '.' + c.slice(2,5);
+    if (c.length > 5) out += '.' + c.slice(5,8);
+    if (c.length > 8) out += '/' + c.slice(8,12);
+    if (c.length > 12) out += '-' + c.slice(12);
+    cnpj.value = out;
+    if (cnpj.parentNode.classList.contains('invalid') && cnpjValid(c)) cnpj.parentNode.classList.remove('invalid');
+  });
+  function cnpjValid(c){
+    if (!/^[A-Z0-9]{12}\d{2}$/.test(c) || /^(.)\1+$/.test(c)) return false;
+    var dv = function(n){
+      var s = 0, w = n - 7;
+      for (var i = 0; i < n; i++) { s += (c.charCodeAt(i) - 48) * w--; if (w < 2) w = 9; }
+      var r = s % 11; return r < 2 ? 0 : 11 - r;
+    };
+    return dv(12) === +c[12] && dv(13) === +c[13];
+  }
+
   // ---- Envio: valida, envia ao CRM, dispara conversão e abre o WhatsApp ----
   var form = $('leadForm');
   var sent = false;
   form.addEventListener('submit', function(e){
     e.preventDefault();
     var ok = true;
-    ['nome','whatsapp','cidade','uf','segmento','produto'].forEach(function(id){
-      var el = $(id), bad = !el.value.trim() || (id === 'whatsapp' && el.value.replace(/\D/g,'').length < 10);
+    ['nome','whatsapp','cidade','uf','cnpj','segmento','produto'].forEach(function(id){
+      var el = $(id), bad = !el.value.trim() ||
+        (id === 'whatsapp' && el.value.replace(/\D/g,'').length < 10) ||
+        (id === 'cnpj' && !cnpjValid(cnpjClean(el.value)));
       el.parentNode.classList.toggle('invalid', bad);
       if (bad && ok) { el.focus(); ok = false; }
     });
@@ -610,6 +640,7 @@
       empresa: $('empresa').value.trim(),
       cidade: $('cidade').value.trim(),
       uf: $('uf').value,
+      cnpj: cnpjClean(cnpj.value),
       segmento: $('segmento').value,
       produto: $('produto').value
     };
@@ -617,6 +648,7 @@
     var msg = 'Olá! Gostaria de solicitar um orçamento.\n\n' +
       '*Nome:* ' + data.nome + '\n' +
       (data.empresa ? '*Empresa:* ' + data.empresa + '\n' : '') +
+      '*CNPJ:* ' + cnpj.value + '\n' +
       '*Cidade:* ' + data.cidade + ' / ' + data.uf + '\n' +
       '*Segmento:* ' + data.segmento + '\n' +
       '*Produto:* ' + data.produto;
@@ -631,7 +663,7 @@
     fetch(C.CRM_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone: phone, name: data.nome, city: data.cidade, state: data.uf }),
+      body: JSON.stringify({ phone: phone, name: data.nome, document: data.cnpj, city: data.cidade, state: data.uf }),
       keepalive: true
     }).then(function(r){
       if (!r.ok) throw new Error('HTTP ' + r.status);
