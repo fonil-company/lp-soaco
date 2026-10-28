@@ -1,0 +1,8 @@
+# Vídeo bruto (264 MB, acima do limite do GitHub e não usado no site)
+*.mp4
+*.mov
+
+# Sistema
+.DS_Store
+Thumbs.db
+desktop.ini
