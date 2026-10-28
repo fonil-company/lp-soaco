@@ -157,6 +157,7 @@
   .form{background:var(--navy);color:var(--white);border-radius:14px;padding:clamp(24px,4vw,40px);box-shadow:0 30px 60px -30px rgba(5,29,89,.55);border-top:6px solid var(--gold)}
   .form h3{font-family:var(--f-title);font-weight:400;text-transform:uppercase;font-size:1.15rem;margin:0 0 24px;color:var(--gold)}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .row--city{grid-template-columns:1fr 110px}
   .field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
   .field label{font-size:.82rem;font-weight:600;letter-spacing:.02em;color:rgba(255,255,255,.85)}
   .field input,.field select{width:100%;font:inherit;font-size:1rem;color:var(--navy);background:var(--white);border:2px solid transparent;border-radius:8px;padding:.8em .95em;transition:border-color .2s}
@@ -190,6 +191,7 @@
   @media (max-width:720px){
     .b-grid{grid-template-columns:1fr}
     .row{grid-template-columns:1fr;gap:0}
+    .row--city{grid-template-columns:1fr 96px;gap:12px}
     .car-slide{aspect-ratio:4/3}
     .car-slide figcaption{padding:40px 16px 14px;font-size:.9rem}
     .car-btn{width:40px;height:40px}
@@ -419,15 +421,26 @@
             <input id="whatsapp" name="whatsapp" type="tel" inputmode="tel" autocomplete="tel-national" required placeholder="(00) 00000-0000" maxlength="15">
           </div>
         </div>
-        <div class="row">
+        <div class="row row--city">
           <div class="field">
-            <label for="empresa">Empresa</label>
-            <input id="empresa" name="empresa" type="text" autocomplete="organization" placeholder="Nome da empresa">
+            <label for="cidade">Cidade</label>
+            <input id="cidade" name="cidade" type="text" autocomplete="address-level2" required placeholder="Sua cidade">
           </div>
           <div class="field">
-            <label for="cidade">Cidade / UF</label>
-            <input id="cidade" name="cidade" type="text" autocomplete="address-level2" required placeholder="Ex.: Campinas / SP">
+            <label for="uf">UF</label>
+            <select id="uf" name="uf" autocomplete="address-level1" required>
+              <option value="" disabled selected>UF</option>
+              <option>AC</option><option>AL</option><option>AP</option><option>AM</option><option>BA</option><option>CE</option>
+              <option>DF</option><option>ES</option><option>GO</option><option>MA</option><option>MT</option><option>MS</option>
+              <option>MG</option><option>PA</option><option>PB</option><option>PR</option><option>PE</option><option>PI</option>
+              <option>RJ</option><option>RN</option><option>RS</option><option>RO</option><option>RR</option><option>SC</option>
+              <option>SP</option><option>SE</option><option>TO</option>
+            </select>
           </div>
+        </div>
+        <div class="field">
+          <label for="empresa">Empresa</label>
+          <input id="empresa" name="empresa" type="text" autocomplete="organization" placeholder="Nome da empresa">
         </div>
         <div class="field">
           <label for="segmento">Segmento</label>
@@ -505,7 +518,8 @@
     ADS_LABEL_LEAD: 'XXXXXXXXXXXXXXXXXXX',
     ADS_LABEL_CLICK: '',
     GA4_ID: '',
-    WHATSAPP: '55XXXXXXXXXXX'
+    WHATSAPP: '55XXXXXXXXXXX',
+    CRM_ENDPOINT: '/api/lead'
   };
 
   // 1) Consent Mode v2 — precisa vir antes do gtag config
@@ -576,13 +590,13 @@
     wpp.value = out;
   });
 
-  // ---- Envio: valida, dispara conversão e abre o WhatsApp ----
+  // ---- Envio: valida, envia ao CRM, dispara conversão e abre o WhatsApp ----
   var form = $('leadForm');
   var sent = false;
   form.addEventListener('submit', function(e){
     e.preventDefault();
     var ok = true;
-    ['nome','whatsapp','cidade','segmento','produto'].forEach(function(id){
+    ['nome','whatsapp','cidade','uf','segmento','produto'].forEach(function(id){
       var el = $(id), bad = !el.value.trim() || (id === 'whatsapp' && el.value.replace(/\D/g,'').length < 10);
       el.parentNode.classList.toggle('invalid', bad);
       if (bad && ok) { el.focus(); ok = false; }
@@ -595,6 +609,7 @@
       nome: $('nome').value.trim(),
       empresa: $('empresa').value.trim(),
       cidade: $('cidade').value.trim(),
+      uf: $('uf').value,
       segmento: $('segmento').value,
       produto: $('produto').value
     };
@@ -602,12 +617,29 @@
     var msg = 'Olá! Gostaria de solicitar um orçamento.\n\n' +
       '*Nome:* ' + data.nome + '\n' +
       (data.empresa ? '*Empresa:* ' + data.empresa + '\n' : '') +
-      '*Cidade:* ' + data.cidade + '\n' +
+      '*Cidade:* ' + data.cidade + ' / ' + data.uf + '\n' +
       '*Segmento:* ' + data.segmento + '\n' +
       '*Produto:* ' + data.produto;
     var url = 'https://wa.me/' + C.WHATSAPP + '?text=' + encodeURIComponent(msg);
 
+    // Só redireciona quando CRM e conversão terminarem (ou após 2,5s, o que vier primeiro)
     var go = function(){ if (go.done) return; go.done = true; location.href = url; };
+    var pending = 2;
+    var done = function(){ if (--pending <= 0) go(); };
+
+    // CRM: o Nginx repassa /api/lead ao webhook (token fica no servidor, não na página)
+    fetch(C.CRM_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: phone, name: data.nome, city: data.cidade, state: data.uf }),
+      keepalive: true
+    }).then(function(r){
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      window.dataLayer.push({ event: 'crm_lead_ok' });
+    }).catch(function(err){
+      console.warn('[CRM] falha ao enviar lead:', err);
+      window.dataLayer.push({ event: 'crm_lead_error' });
+    }).then(done);
 
     // dataLayer para GTM (caso use)
     window.dataLayer.push({ event: 'generate_lead', lead_segmento: data.segmento, lead_produto: data.produto });
@@ -619,10 +651,10 @@
       send_to: C.ADS_ID + '/' + C.ADS_LABEL_LEAD,
       value: 1.0,
       currency: 'BRL',
-      event_callback: go
+      event_callback: done
     });
     if (C.GA4_ID) gtag('event', 'generate_lead', { segmento: data.segmento, produto: data.produto });
-    setTimeout(go, 1200); // fallback caso o gtag esteja bloqueado
+    setTimeout(go, 2500); // fallback caso o gtag ou o CRM não respondam
   });
 
   // ---- Cliques nos CTAs (micro-conversão / análise) ----

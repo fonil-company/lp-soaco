@@ -7,10 +7,28 @@ Landing page estática para campanhas Google Ads, servida por Nginx em Docker.
 1. **+ Service → App**
 2. **Source → GitHub**: repositório `fonil-company/lp-soaco`, branch `main`
 3. **Build → Dockerfile** (arquivo `Dockerfile` na raiz)
-4. **Domains**: adicione o domínio e aponte para a **porta 80**. O HTTPS é gerado pelo Easypanel.
-5. **Deploy**
+4. **Environment**: adicione a variável abaixo (URL completa do webhook do CRM, com o token):
+   ```
+   CRM_WEBHOOK_URL=https://crm.fonilgroup.com.br/api/webhooks/leads/SEU_TOKEN
+   ```
+5. **Domains**: adicione o domínio e aponte para a **porta 80**. O HTTPS é gerado pelo Easypanel.
+6. **Deploy**
 
 Cada `git push` na `main` pode publicar automaticamente: ative **Auto Deploy** no serviço.
+
+## Integração com o CRM
+
+O formulário envia o lead para `/api/lead` no próprio domínio. O Nginx repassa esse envio para `CRM_WEBHOOK_URL`, então o token nunca aparece no código da página. Esse caminho aceita no máximo 10 envios por minuto por IP.
+
+Payload enviado:
+
+```json
+{ "phone": "86999999999", "name": "Nome", "city": "Teresina", "state": "PI" }
+```
+
+Depois do envio, o visitante segue para o WhatsApp mesmo se o CRM falhar. Na falha, o console mostra `[CRM] falha ao enviar lead` e o dataLayer recebe `crm_lead_error`.
+
+Se a variável não estiver definida, o site sobe normalmente, mas `/api/lead` responde com erro.
 
 ## Antes de publicar
 
