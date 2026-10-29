@@ -566,14 +566,14 @@
   $('ano').textContent = new Date().getFullYear();
 
   // ---- Captura e persistência de GCLID / UTMs (90 dias) ----
-  var KEYS = ['gclid','gbraid','wbraid','utm_source','utm_medium','utm_campaign','utm_term','utm_content'];
+  var KEYS = ['gclid','gbraid','wbraid','fbclid','utm_source','utm_medium','utm_campaign','utm_term','utm_content'];
   var params = new URLSearchParams(location.search);
   var stored = {};
   try { stored = JSON.parse(localStorage.getItem('soaco_attr') || '{}'); } catch(e) {}
   if (stored.exp && stored.exp < Date.now()) stored = {};
   var fresh = KEYS.some(function(k){ return params.get(k); });
   if (fresh) {
-    stored = { exp: Date.now() + 90*864e5 };
+    stored = { exp: Date.now() + 90*864e5, landing_page: location.href, ts: Date.now() };
     KEYS.forEach(function(k){ if (params.get(k)) stored[k] = params.get(k); });
     try { localStorage.setItem('soaco_attr', JSON.stringify(stored)); } catch(e) {}
   }
@@ -689,6 +689,13 @@
     KEYS.forEach(function(k){
       if (stored[k]) lead[k] = stored[k];
     });
+    // URL de chegada com os parâmetros da campanha
+    lead.landing_page = stored.landing_page || location.href;
+    // Meta: cookies do Pixel (_fbp/_fbc); sem Pixel, o fbc é montado a partir do fbclid
+    var cookie = function(n){ var m = document.cookie.match('(?:^|; )' + n + '=([^;]*)'); return m ? decodeURIComponent(m[1]) : ''; };
+    var fbp = cookie('_fbp'), fbc = cookie('_fbc') || (stored.fbclid ? 'fb.1.' + (stored.ts || Date.now()) + '.' + stored.fbclid : '');
+    if (fbp) lead.fbp = fbp;
+    if (fbc) lead.fbc = fbc;
     fetch(C.CRM_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
