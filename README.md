@@ -38,6 +38,12 @@ Depois do envio, o visitante segue para o WhatsApp mesmo se o CRM falhar. Na fal
 
 Se a variável não estiver definida, o site sobe normalmente, mas `/api/lead` responde com erro.
 
+### Umbrella CRM
+
+O mesmo lead também vai para o Umbrella CRM, por `/api/lead-umbrella`, que o Nginx repassa para `CRM_UMBRELLA_WEBHOOK_URL` (já vem preenchida no `Dockerfile`; dá para trocar em Easypanel > Environment). Além dos campos acima, vão `event_id`/`browserEventId`, `landingUrl`, `referrer`, `_fbc` e `_fbp`, no formato do snippet oficial deles.
+
+O snippet `<script src="https://crm-api.umbrellaecosystem.com.br/api/v1/public/t/....js">` **não** é usado: em 29/10/2026 ele tinha um erro de sintaxe (expressão regular inválida em `getCookie`) e não carregava, e a API deles não libera CORS para outros domínios. Por isso o envio passa pelo servidor. Falhas aparecem no console como `[UMBRELLA] falha ao enviar lead` e no dataLayer como `umbrella_lead_error`.
+
 ## Antes de publicar
 
 No fim do `index.html`, preencha o bloco `window.SOACO`:

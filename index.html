@@ -528,7 +528,8 @@
     ADS_LABEL_CLICK: '',
     GA4_ID: '',
     WHATSAPP: '55XXXXXXXXXXX',
-    CRM_ENDPOINT: '/api/lead'
+    CRM_ENDPOINT: '/api/lead',
+    UMBRELLA_ENDPOINT: '/api/lead-umbrella'
   };
 
   // 1) Consent Mode v2 — precisa vir antes do gtag config
@@ -676,7 +677,7 @@
 
     // Só redireciona quando CRM e conversão terminarem (ou após 2,5s, o que vier primeiro)
     var go = function(){ if (go.done) return; go.done = true; location.href = url; };
-    var pending = 2;
+    var pending = 3; // CRM, Umbrella e conversão do Google Ads
     var done = function(){ if (--pending <= 0) go(); };
 
     // CRM: o Nginx repassa /api/lead ao webhook (token fica no servidor, não na página)
@@ -696,18 +697,33 @@
     var fbp = cookie('_fbp'), fbc = cookie('_fbc') || (stored.fbclid ? 'fb.1.' + (stored.ts || Date.now()) + '.' + stored.fbclid : '');
     if (fbp) lead.fbp = fbp;
     if (fbc) lead.fbc = fbc;
-    fetch(C.CRM_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(lead),
-      keepalive: true
-    }).then(function(r){
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      window.dataLayer.push({ event: 'crm_lead_ok' });
-    }).catch(function(err){
-      console.warn('[CRM] falha ao enviar lead:', err);
-      window.dataLayer.push({ event: 'crm_lead_error' });
-    }).then(done);
+    var send = function(endpoint, body, tag){
+      return fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        keepalive: true
+      }).then(function(r){
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        window.dataLayer.push({ event: tag + '_lead_ok' });
+      }).catch(function(err){
+        console.warn('[' + tag.toUpperCase() + '] falha ao enviar lead:', err);
+        window.dataLayer.push({ event: tag + '_lead_error' });
+      }).then(done);
+    };
+    send(C.CRM_ENDPOINT, lead, 'crm');
+
+    // Umbrella CRM: mesmo lead, no formato do snippet oficial (event_id, landingUrl, referrer, _fbc/_fbp).
+    // Vai pelo Nginx (/api/lead-umbrella): a API da Umbrella não libera CORS para o domínio da página.
+    var eventId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(16).slice(2);
+    var umb = JSON.parse(JSON.stringify(lead));
+    umb.event_id = umb.browserEventId = eventId;
+    umb.landingUrl = lead.landing_page;
+    umb.referrer = document.referrer || '';
+    if (fbp) umb._fbp = fbp;
+    if (fbc) umb._fbc = fbc;
+    send(C.UMBRELLA_ENDPOINT, umb, 'umbrella');
+    if (typeof window.fbq === 'function') window.fbq('track', 'Lead', {}, { eventID: eventId }); // deduplicação com o Pixel
 
     // dataLayer para GTM (caso use)
     window.dataLayer.push({ event: 'generate_lead', lead_segmento: data.segmento, lead_produto: data.produto });
