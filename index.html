@@ -680,9 +680,13 @@
     var done = function(){ if (--pending <= 0) go(); };
 
     // CRM: o Nginx repassa /api/lead ao webhook (token fica no servidor, não na página)
-    var lead = { phone: phone, name: data.nome, document: data.cnpj, city: data.cidade, state: data.uf };
+    var lead = {
+      phone: phone, name: data.nome, document: data.cnpj, city: data.cidade, state: data.uf,
+      segment: data.segmento, product: data.produto
+    };
+    if (data.empresa) lead.company = data.empresa;
     // Origem da campanha (UTMs + GCLID capturados na chegada, válidos por 90 dias); só envia o que existir
-    ['utm_source','utm_medium','utm_campaign','utm_term','utm_content','gclid'].forEach(function(k){
+    KEYS.forEach(function(k){
       if (stored[k]) lead[k] = stored[k];
     });
     fetch(C.CRM_ENDPOINT, {
