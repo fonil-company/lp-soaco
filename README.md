@@ -42,7 +42,7 @@ Se a variável não estiver definida, o site sobe normalmente, mas `/api/lead` r
 
 O mesmo lead também vai para o Umbrella CRM, por `/api/lead-umbrella`, que o Nginx repassa para `CRM_UMBRELLA_WEBHOOK_URL` (já vem preenchida no `Dockerfile`; dá para trocar em Easypanel > Environment). Além dos campos acima, vão `event_id`/`browserEventId`, `landingUrl`, `referrer`, `_fbc` e `_fbp`, no formato do snippet oficial deles.
 
-O snippet `<script src="https://crm-api.umbrellaecosystem.com.br/api/v1/public/t/....js">` **não** é usado: em 29/10/2026 ele tinha um erro de sintaxe (expressão regular inválida em `getCookie`) e não carregava, e a API deles não libera CORS para outros domínios. Por isso o envio passa pelo servidor. Falhas aparecem no console como `[UMBRELLA] falha ao enviar lead` e no dataLayer como `umbrella_lead_error`.
+O snippet `<script src="https://crm-api.umbrellaecosystem.com.br/api/v1/public/t/31236f71-52e0-4a85-ba0b-1b13264731fc.js" defer>` está no `<head>` desde 03/11/2026, só para o rastreamento (first/last touch, UTMs e cookie `_fbc`). O formulário **não** tem `data-umbrella`, então o snippet não envia o lead sozinho: a API deles responde ao preflight sem `Access-Control-Allow-Origin`, e o envio direto do navegador seria bloqueado. Por isso o lead passa pelo servidor, para o mesmo webhook do snippet. Falhas aparecem no console como `[UMBRELLA] falha ao enviar lead` e no dataLayer como `umbrella_lead_error`.
 
 ## Antes de publicar
 

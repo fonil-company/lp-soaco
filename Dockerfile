@@ -4,7 +4,7 @@ FROM nginx:1.27-alpine
 # Vazio por padrão: o site sobe normalmente e o envio ao CRM só passa a funcionar quando configurado.
 ENV CRM_WEBHOOK_URL=""
 # Webhook do Umbrella CRM (o mesmo que aparece no snippet público deles). Pode ser trocado em Easypanel > Environment.
-ENV CRM_UMBRELLA_WEBHOOK_URL="https://crm-api.umbrellaecosystem.com.br/api/v1/webhooks/in/796b2005-3c30-4e92-8e97-d0ebdfc08bcd"
+ENV CRM_UMBRELLA_WEBHOOK_URL="https://crm-api.umbrellaecosystem.com.br/api/v1/webhooks/in/31236f71-52e0-4a85-ba0b-1b13264731fc"
 # Só variáveis CRM_* são substituídas no template
 ENV NGINX_ENVSUBST_FILTER="^CRM_"
 
