@@ -6,3 +6,6 @@
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Arquivos que não fazem parte do site
+*.exe
