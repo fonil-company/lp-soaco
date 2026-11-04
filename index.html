@@ -154,6 +154,11 @@
   .car-dots button{width:28px;height:6px;padding:0;border:0;border-radius:3px;background:var(--steel);opacity:.55;cursor:pointer;transition:width .25s,background .25s}
   .car-dots button[aria-current="true"]{width:44px;background:var(--gold);opacity:1}
   .car-count{font-family:var(--f-title);font-size:.9rem;color:var(--navy);white-space:nowrap}
+  .strip{margin-top:48px}
+  .strip-title{font-size:1.15rem;font-weight:700;line-height:1.3;margin:0 0 18px;color:var(--navy)}
+  .strip-track{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+  .strip-item{margin:0;aspect-ratio:3/5;border-radius:12px;overflow:hidden;background:var(--navy);box-shadow:0 20px 40px -24px rgba(5,29,89,.5)}
+  .strip-item img{width:100%;height:100%;object-fit:cover}
   .b-card h3{font-size:1.2rem;font-weight:700;line-height:1.35;margin:.9em 0 0}
 
   /* ---------- Segmentos ---------- */
@@ -218,6 +223,10 @@
     .hero-photo img{aspect-ratio:16/10}
     .hero{padding-top:110px}
     .s-grid{grid-template-columns:repeat(2,1fr)}
+    .strip-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px;scrollbar-width:none;
+      margin-inline:calc(-1 * clamp(16px,4vw,32px));padding-inline:clamp(16px,4vw,32px);scroll-padding-inline:clamp(16px,4vw,32px)}
+    .strip-track::-webkit-scrollbar{display:none}
+    .strip-item{flex:0 0 30%;scroll-snap-align:start}
   }
   @media (max-width:720px){
     .b-grid{grid-template-columns:1fr}
@@ -233,6 +242,8 @@
     .car-dots button[aria-current="true"]{width:30px}
     .car-prev{left:10px}
     .car-next{right:10px}
+    .strip{margin-top:36px}
+    .strip-item{flex-basis:62%}
     .header .btn{display:none}
     .sticky-cta{display:block;position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--navy-dark);
       padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 24px rgba(0,0,0,.25);
@@ -436,6 +447,10 @@
             <figcaption><b>Gôndolas</b>Mercearia</figcaption>
           </figure>
           <figure class="car-slide">
+            <img src="img/porta-pallet-armazem-carga-1280.webp" srcset="img/porta-pallet-armazem-carga-768.webp 768w, img/porta-pallet-armazem-carga-1280.webp 1280w" sizes="(max-width:1200px) 92vw, 1136px" width="1280" height="853" loading="lazy" alt="Porta-pallets com caixas e sacarias armazenadas em galpão">
+            <figcaption><b>Porta-pallets</b>Armazém</figcaption>
+          </figure>
+          <figure class="car-slide">
             <img src="img/gondola-supermercado-expositor-1280.webp" srcset="img/gondola-supermercado-expositor-768.webp 768w, img/gondola-supermercado-expositor-1280.webp 1280w" sizes="(max-width:1200px) 92vw, 1136px" width="1280" height="720" loading="lazy" alt="Gôndola expositora com produtos em supermercado">
             <figcaption><b>Gôndolas</b>Supermercado</figcaption>
           </figure>
@@ -449,7 +464,18 @@
       </div>
       <div class="car-nav">
         <div class="car-dots" id="carDots"></div>
-        <span class="car-count" id="carCount">01 / 08</span>
+        <span class="car-count" id="carCount">01 / 09</span>
+      </div>
+
+      <div class="strip">
+        <h3 class="strip-title">Porta-pallets instalados pela Só Aço</h3>
+        <div class="strip-track">
+          <figure class="strip-item"><img src="img/porta-pallet-obra-1-576.webp" srcset="img/porta-pallet-obra-1-400.webp 400w, img/porta-pallet-obra-1-576.webp 576w" sizes="(max-width:720px) 62vw, (max-width:980px) 30vw, 220px" width="576" height="1024" loading="lazy" alt="Porta-pallets de grande altura recém-instalados em galpão"></figure>
+          <figure class="strip-item"><img src="img/porta-pallet-obra-2-640.webp" srcset="img/porta-pallet-obra-2-400.webp 400w, img/porta-pallet-obra-2-640.webp 640w" sizes="(max-width:720px) 62vw, (max-width:980px) 30vw, 220px" width="640" height="960" loading="lazy" alt="Porta-pallets carregados com caixas e protetor de coluna na base"></figure>
+          <figure class="strip-item"><img src="img/porta-pallet-obra-3-640.webp" srcset="img/porta-pallet-obra-3-400.webp 400w, img/porta-pallet-obra-3-640.webp 640w" sizes="(max-width:720px) 62vw, (max-width:980px) 30vw, 220px" width="640" height="960" loading="lazy" alt="Corredor entre porta-pallets em centro de distribuição"></figure>
+          <figure class="strip-item"><img src="img/porta-pallet-obra-4-640.webp" srcset="img/porta-pallet-obra-4-400.webp 400w, img/porta-pallet-obra-4-640.webp 640w" sizes="(max-width:720px) 62vw, (max-width:980px) 30vw, 220px" width="640" height="1139" loading="lazy" alt="Rua de porta-pallets azul e laranja em galpão vazio"></figure>
+          <figure class="strip-item"><img src="img/porta-pallet-obra-5-576.webp" srcset="img/porta-pallet-obra-5-400.webp 400w, img/porta-pallet-obra-5-576.webp 576w" sizes="(max-width:720px) 62vw, (max-width:980px) 30vw, 220px" width="576" height="1024" loading="lazy" alt="Fileira de porta-pallets com longarinas laranja e colunas azuis"></figure>
+        </div>
       </div>
     </div>
   </section>
