@@ -1,4 +1,4 @@
-# LP Só Aço: Gôndolas e Porta-Pallets
+# LP Só Aço: Porta-Pallets
 
 Landing page estática para campanhas Google Ads, servida por Nginx em Docker.
 
@@ -25,14 +25,14 @@ Payload enviado:
 ```json
 {
   "phone": "86999999999", "name": "Nome", "document": "12345678000190", "city": "Teresina", "state": "PI",
-  "company": "Empresa LTDA", "segment": "Supermercados", "product": "Gôndolas",
+  "company": "Empresa LTDA", "segment": "Centros de distribuição", "product": "Porta-pallets",
   "utm_source": "google", "utm_medium": "cpc", "utm_campaign": "...", "utm_term": "...", "utm_content": "...",
   "gclid": "...", "gbraid": "...", "wbraid": "...", "fbclid": "...", "fbp": "fb.1...", "fbc": "fb.1...",
   "landing_page": "https://SEUDOMINIO.com.br/?utm_source=..."
 }
 ```
 
-`company` só vai quando o campo Empresa é preenchido (é opcional no formulário). UTMs, GCLID, GBRAID, WBRAID e FBCLID são capturados da URL de chegada e guardados por 90 dias no navegador, junto com a URL de chegada (`landing_page`). Só são enviados os que existirem. `fbp` e `fbc` vêm dos cookies do Meta Pixel; sem Pixel na página, `fbp` não é enviado e `fbc` é montado a partir do `fbclid`.
+`company` só vai quando o campo Empresa é preenchido (é opcional no formulário). `product` é sempre `Porta-pallets`, já que a página vende só esse produto. UTMs, GCLID, GBRAID, WBRAID e FBCLID são capturados da URL de chegada e guardados por 90 dias no navegador, junto com a URL de chegada (`landing_page`). Só são enviados os que existirem. `fbp` e `fbc` vêm dos cookies do Meta Pixel; sem Pixel na página, `fbp` não é enviado e `fbc` é montado a partir do `fbclid`.
 
 Depois do envio, o visitante segue para o WhatsApp mesmo se o CRM falhar. Na falha, o console mostra `[CRM] falha ao enviar lead` e o dataLayer recebe `crm_lead_error`.
 
