@@ -53,6 +53,12 @@ A Conversions API recebe telefone, nome, cidade, UF, país e CNPJ (como `externa
 
 Para testar: Gerenciador de Eventos > Testar eventos. Copie o código e abra a página com `?test_event_code=TESTxxxx`. Falhas aparecem como `[META] falha ao enviar Lead` no console e `meta_capi_error` no dataLayer.
 
+## Google Tag Manager
+
+O container `GTM-5S8MNSNV` está instalado desde 05/11/2026: o script no topo do `<head>` e o `<noscript>` logo depois do `<body>`. Ele usa o mesmo `dataLayer` da página, então recebe os eventos que ela já envia: `generate_lead` (com `lead_segmento` e `lead_produto`), `cta_click` (com `cta_posicao`), `gallery_interaction`, `crm_lead_ok`/`crm_lead_error` e `umbrella_lead_ok`/`umbrella_lead_error`.
+
+A tag do Google Ads também continua sendo disparada direto pela página (bloco `window.SOACO`). Se a conversão do Ads ou o GA4 forem configurados dentro do GTM, o disparo direto da página precisa ser removido do `index.html`, senão a conversão é contada duas vezes.
+
 ## Antes de publicar
 
 No fim do `index.html`, preencha o bloco `window.SOACO`:
