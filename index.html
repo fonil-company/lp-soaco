@@ -273,8 +273,20 @@
 }
 </script>
 
+<!-- Meta Pixel (PageView + Lead com event_id; o Lead também vai pela Conversions API via /api/meta-event) -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '1063603920051123');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none" alt="" src="https://www.facebook.com/tr?id=1063603920051123&ev=PageView&noscript=1"></noscript>
+
 <!-- Umbrella CRM: rastreamento (first/last touch, UTMs, _fbc). O lead em si vai pelo servidor (/api/lead-umbrella). -->
-<script src="https://crm-api.umbrellaecosystem.com.br/api/v1/public/t/31236f71-52e0-4a85-ba0b-1b13264731fc.js" defer></script>
+<script src="https://crm-api.umbrellaecosystem.com.br/api/v1/public/t/796b2005-3c30-4e92-8e97-d0ebdfc08bcd.js" defer></script>
 </head>
 <body>
 
@@ -614,9 +626,10 @@
     ADS_LABEL_LEAD: 'XXXXXXXXXXXXXXXXXXX',
     ADS_LABEL_CLICK: '',
     GA4_ID: '',
-    WHATSAPP: '55XXXXXXXXXXX',
+    WHATSAPP: '558699950140',
     CRM_ENDPOINT: '/api/lead',
-    UMBRELLA_ENDPOINT: '/api/lead-umbrella'
+    UMBRELLA_ENDPOINT: '/api/lead-umbrella',
+    META_ENDPOINT: '/api/meta-event' // Conversions API: o Nginx repassa ao Meta com o token (META_CAPI_TOKEN)
   };
 
   // 1) Consent Mode v2 — precisa vir antes do gtag config
@@ -726,6 +739,52 @@
     return dv(12) === +c[12] && dv(13) === +c[13];
   }
 
+  // ---- Meta Conversions API ----
+  // Dados pessoais vão com hash SHA-256 (padrão do Meta); o token fica no Nginx, não na página.
+  // Para validar em Gerenciador de Eventos > Testar eventos, abra a página com ?test_event_code=TESTxxxx
+  var testCode = params.get('test_event_code') || '';
+  try { if (testCode) sessionStorage.setItem('soaco_test_code', testCode); else testCode = sessionStorage.getItem('soaco_test_code') || ''; } catch(e) {}
+  var sha256 = function(v){
+    if (!v || !(window.crypto && crypto.subtle && window.TextEncoder)) return Promise.resolve('');
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(v)).then(function(buf){
+      return Array.prototype.map.call(new Uint8Array(buf), function(b){ return ('0' + b.toString(16)).slice(-2); }).join('');
+    }).catch(function(){ return ''; });
+  };
+  var plain = function(v){ return (v || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, ''); };
+  function metaCapi(o){
+    var names = o.nome.trim().split(/\s+/);
+    var raw = {
+      ph: o.phone ? '55' + o.phone : '',
+      fn: plain(names[0]),
+      ln: names.length > 1 ? plain(names[names.length - 1]) : '',
+      ct: plain(o.cidade),
+      st: plain(o.uf),
+      country: 'br',
+      external_id: plain(o.cnpj)
+    };
+    var keys = Object.keys(raw);
+    return Promise.all(keys.map(function(k){ return sha256(raw[k]); })).then(function(h){
+      var ud = { client_user_agent: navigator.userAgent };
+      keys.forEach(function(k, i){ if (h[i]) ud[k] = h[i]; });
+      if (o.fbp) ud.fbp = o.fbp;
+      if (o.fbc) ud.fbc = o.fbc;
+      var body = { data: [{
+        event_name: 'Lead', event_time: Math.floor(Date.now() / 1000), event_id: o.eventId,
+        action_source: 'website', event_source_url: location.href, user_data: ud, custom_data: o.custom
+      }] };
+      if (testCode) body.test_event_code = testCode;
+      return fetch(C.META_ENDPOINT, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), keepalive: true
+      });
+    }).then(function(r){
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      window.dataLayer.push({ event: 'meta_capi_ok' });
+    }).catch(function(err){
+      console.warn('[META] falha ao enviar Lead pela Conversions API:', err);
+      window.dataLayer.push({ event: 'meta_capi_error' });
+    });
+  }
+
   // ---- Envio: valida, envia ao CRM, dispara conversão e abre o WhatsApp ----
   var form = $('leadForm');
   var sent = false;
@@ -764,7 +823,7 @@
 
     // Só redireciona quando CRM e conversão terminarem (ou após 2,5s, o que vier primeiro)
     var go = function(){ if (go.done) return; go.done = true; location.href = url; };
-    var pending = 3; // CRM, Umbrella e conversão do Google Ads
+    var pending = 4; // CRM, Umbrella, Meta (CAPI) e conversão do Google Ads
     var done = function(){ if (--pending <= 0) go(); };
 
     // CRM: o Nginx repassa /api/lead ao webhook (token fica no servidor, não na página)
@@ -810,7 +869,13 @@
     if (fbp) umb._fbp = fbp;
     if (fbc) umb._fbc = fbc;
     send(C.UMBRELLA_ENDPOINT, umb, 'umbrella');
-    if (typeof window.fbq === 'function') window.fbq('track', 'Lead', {}, { eventID: eventId }); // deduplicação com o Pixel
+    // Meta: Lead no Pixel (navegador) e na Conversions API (servidor) com o mesmo event_id, para o Meta deduplicar
+    var metaCustom = { content_name: data.produto, content_category: data.segmento, lead_source: 'LP Google Ads' };
+    if (typeof window.fbq === 'function') window.fbq('track', 'Lead', metaCustom, { eventID: eventId });
+    metaCapi({
+      eventId: eventId, phone: phone, nome: data.nome, cidade: data.cidade, uf: data.uf, cnpj: data.cnpj,
+      fbp: fbp, fbc: fbc, custom: metaCustom
+    }).then(done);
 
     // dataLayer para GTM (caso use)
     window.dataLayer.push({ event: 'generate_lead', lead_segmento: data.segmento, lead_produto: data.produto });
