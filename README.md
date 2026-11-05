@@ -57,7 +57,7 @@ Para testar: Gerenciador de Eventos > Testar eventos. Copie o código e abra a p
 
 O container `GTM-5S8MNSNV` está instalado desde 05/11/2026: o script no topo do `<head>` e o `<noscript>` logo depois do `<body>`. Ele usa o mesmo `dataLayer` da página, então recebe os eventos que ela já envia: `generate_lead` (com `lead_segmento` e `lead_produto`), `cta_click` (com `cta_posicao`), `gallery_interaction`, `crm_lead_ok`/`crm_lead_error` e `umbrella_lead_ok`/`umbrella_lead_error`.
 
-A tag do Google Ads também continua sendo disparada direto pela página (bloco `window.SOACO`). Se a conversão do Ads ou o GA4 forem configurados dentro do GTM, o disparo direto da página precisa ser removido do `index.html`, senão a conversão é contada duas vezes.
+A conversão do Google Ads (`AW-18558559061`, rótulo `2pV6CNaj5bIdENXGtJFF`, ação "Enviar formulário de lead", contagem "Uma") é disparada direto pela página no envio do formulário (bloco `window.SOACO`), com conversões otimizadas (telefone, nome, cidade e UF) e `transaction_id` igual ao `event_id` do CRM/Meta. Em 05/11/2026 o container só carregava a tag do Google dessa conta, sem tag de conversão. Se a conversão do Ads ou o GA4 forem configurados dentro do GTM, o disparo direto da página precisa ser removido do `index.html`, senão a conversão é contada duas vezes.
 
 ## Antes de publicar
 

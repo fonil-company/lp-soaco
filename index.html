@@ -633,8 +633,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
      ============================================================ -->
 <script>
   window.SOACO = {
-    ADS_ID: 'AW-XXXXXXXXXX',
-    ADS_LABEL_LEAD: 'XXXXXXXXXXXXXXXXXXX',
+    ADS_ID: 'AW-18558559061',
+    ADS_LABEL_LEAD: '2pV6CNaj5bIdENXGtJFF', // conversão "Enviar formulário de lead"
     ADS_LABEL_CLICK: '',
     GA4_ID: '',
     WHATSAPP: '558699950140',
@@ -892,12 +892,19 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     window.dataLayer.push({ event: 'generate_lead', lead_segmento: data.segmento, lead_produto: data.produto });
 
     // Conversões Otimizadas: dados do usuário (o Google aplica hash SHA-256)
-    gtag('set', 'user_data', { phone_number: '+55' + phone, address: { first_name: data.nome.split(' ')[0], country: 'BR' } });
+    var partes = data.nome.trim().split(/\s+/);
+    var endereco = { first_name: partes[0], country: 'BR' };
+    if (partes.length > 1) endereco.last_name = partes[partes.length - 1];
+    if (data.cidade) endereco.city = data.cidade;
+    if (data.uf) endereco.region = data.uf;
+    gtag('set', 'user_data', { phone_number: '+55' + phone, address: endereco });
 
+    // transaction_id = mesmo event_id do CRM/Meta: evita contar o mesmo lead duas vezes
     gtag('event', 'conversion', {
       send_to: C.ADS_ID + '/' + C.ADS_LABEL_LEAD,
       value: 1.0,
       currency: 'BRL',
+      transaction_id: eventId,
       event_callback: done
     });
     if (C.GA4_ID) gtag('event', 'generate_lead', { segmento: data.segmento, produto: data.produto });
