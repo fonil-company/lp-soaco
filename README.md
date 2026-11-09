@@ -53,6 +53,12 @@ A Conversions API recebe telefone, nome, cidade, UF, país e CNPJ (como `externa
 
 Para testar: Gerenciador de Eventos > Testar eventos. Copie o código e abra a página com `?test_event_code=TESTxxxx`. Falhas aparecem como `[META] falha ao enviar Lead` no console e `meta_capi_error` no dataLayer.
 
+### Planilha Google (Fonil)
+
+Cada lead também vai para uma planilha Google, por um Apps Script (`SHEET_ENDPOINT` no bloco `window.SOACO`). O envio sai direto do navegador, sem passar pelo Nginx, com os campos `nome`, `whatsapp`, `uf`, `cidade`, `empresa`, `cnpj`, `segmento`, `gclid`, `utm_source`, `utm_medium` e `utm_campaign` (cada campo vira uma coluna, cada lead uma linha).
+
+Mantenha `Content-Type: text/plain` e `mode: 'no-cors'`: com `application/json` o Apps Script bloqueia o envio por CORS. Por causa do `no-cors`, a página não consegue ver se a planilha gravou; uma falha de rede aparece no console como `[PLANILHA] falha ao enviar lead`. O envio não atrasa o redirecionamento ao WhatsApp.
+
 ## Google Ads
 
 A conversão do Google Ads (`AW-18558559061`, rótulo `2pV6CNaj5bIdENXGtJFF`, ação "Enviar formulário de lead", contagem "Uma") é disparada direto pela página no envio do formulário (bloco `window.SOACO`), com conversões otimizadas (telefone, nome, cidade e UF) e `transaction_id` igual ao `event_id` do CRM/Meta. A página não usa Google Tag Manager (removido em 06/11/2026); se ele voltar e a conversão for configurada lá, o disparo direto da página precisa sair, senão a conversão é contada duas vezes.

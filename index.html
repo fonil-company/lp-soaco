@@ -629,7 +629,9 @@ fbq('track', 'PageView');
     WHATSAPP: '558699950140',
     CRM_ENDPOINT: '/api/lead',
     UMBRELLA_ENDPOINT: '/api/lead-umbrella',
-    META_ENDPOINT: '/api/meta-event' // Conversions API: o Nginx repassa ao Meta com o token (META_CAPI_TOKEN)
+    META_ENDPOINT: '/api/meta-event', // Conversions API: o Nginx repassa ao Meta com o token (META_CAPI_TOKEN)
+    // Planilha Google da Fonil (Apps Script): recebe uma cópia de cada lead, direto do navegador
+    SHEET_ENDPOINT: 'https://script.google.com/macros/s/AKfycbxNpSQHqFn4UIOuQdo5k-n_kjhPAg_iopYwrokZ4-sn2Wk5NJZ7y6f3-jmqbzTAgR8QGg/exec'
   };
 
   // 1) Consent Mode v2 — precisa vir antes do gtag config
@@ -869,6 +871,24 @@ fbq('track', 'PageView');
     if (fbp) umb._fbp = fbp;
     if (fbc) umb._fbc = fbc;
     send(C.UMBRELLA_ENDPOINT, umb, 'umbrella');
+
+    // Cópia do lead para a planilha Google (Fonil). Manter text/plain + no-cors: com application/json o
+    // Apps Script bloqueia por CORS. keepalive garante o envio mesmo com o redirecionamento ao WhatsApp.
+    (function(){
+      var f = form, v = function(n){ return f[n] ? f[n].value : ''; };
+      var planilha = {
+        nome: v('nome'), whatsapp: v('whatsapp'), uf: v('uf'), cidade: v('cidade'),
+        empresa: v('empresa'), cnpj: v('cnpj'), segmento: v('segmento'),
+        gclid: v('gclid'), utm_source: v('utm_source'), utm_medium: v('utm_medium'), utm_campaign: v('utm_campaign')
+      };
+      fetch(C.SHEET_ENDPOINT, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(planilha),
+        keepalive: true
+      }).catch(function(err){ console.warn('[PLANILHA] falha ao enviar lead:', err); });
+    })();
     // Meta: Lead no Pixel (navegador) e na Conversions API (servidor) com o mesmo event_id, para o Meta deduplicar
     var metaCustom = { content_name: data.produto, content_category: data.segmento, lead_source: 'LP Google Ads' };
     if (typeof window.fbq === 'function') window.fbq('track', 'Lead', metaCustom, { eventID: eventId });
