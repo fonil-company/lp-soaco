@@ -570,6 +570,15 @@ fbq('track', 'PageView');
             <option>Outro</option>
           </select>
         </div>
+        <div class="field">
+          <label for="altura">Altura disponível para armazenamento</label>
+          <select id="altura" name="altura" required>
+            <option value="" disabled selected>Selecione</option>
+            <option>Até 4 metros</option>
+            <option>Até 8 metros</option>
+            <option>Acima de 8 metros</option>
+          </select>
+        </div>
 
         <!-- Rastreamento de origem (preenchido automaticamente) -->
         <input type="hidden" name="gclid" id="gclid">
@@ -793,7 +802,7 @@ fbq('track', 'PageView');
   form.addEventListener('submit', function(e){
     e.preventDefault();
     var ok = true;
-    ['nome','whatsapp','cidade','uf','cnpj','segmento'].forEach(function(id){
+    ['nome','whatsapp','cidade','uf','cnpj','segmento','altura'].forEach(function(id){
       var el = $(id), bad = !el.value.trim() ||
         (id === 'whatsapp' && el.value.replace(/\D/g,'').length < 10) ||
         (id === 'cnpj' && !cnpjValid(cnpjClean(el.value)));
@@ -811,6 +820,7 @@ fbq('track', 'PageView');
       uf: $('uf').value,
       cnpj: cnpjClean(cnpj.value),
       segmento: $('segmento').value,
+      altura: $('altura').value,
       produto: 'Porta-pallets' // único produto da página; segue no CRM e no WhatsApp
     };
 
@@ -820,6 +830,7 @@ fbq('track', 'PageView');
       '*CNPJ:* ' + cnpj.value + '\n' +
       '*Cidade:* ' + data.cidade + ' / ' + data.uf + '\n' +
       '*Segmento:* ' + data.segmento + '\n' +
+      '*Altura disponível:* ' + data.altura + '\n' +
       '*Produto:* ' + data.produto;
     var url = 'https://wa.me/' + C.WHATSAPP + '?text=' + encodeURIComponent(msg);
 
@@ -831,7 +842,7 @@ fbq('track', 'PageView');
     // CRM: o Nginx repassa /api/lead ao webhook (token fica no servidor, não na página)
     var lead = {
       phone: phone, name: data.nome, document: data.cnpj, city: data.cidade, state: data.uf,
-      segment: data.segmento, product: data.produto
+      segment: data.segmento, storage_height: data.altura, product: data.produto
     };
     if (data.empresa) lead.company = data.empresa;
     // Origem da campanha (UTMs + GCLID capturados na chegada, válidos por 90 dias); só envia o que existir
@@ -878,7 +889,7 @@ fbq('track', 'PageView');
       var f = form, v = function(n){ return f[n] ? f[n].value : ''; };
       var planilha = {
         nome: v('nome'), whatsapp: v('whatsapp'), uf: v('uf'), cidade: v('cidade'),
-        empresa: v('empresa'), cnpj: v('cnpj'), segmento: v('segmento'),
+        empresa: v('empresa'), cnpj: v('cnpj'), segmento: v('segmento'), altura: v('altura'),
         gclid: v('gclid'), utm_source: v('utm_source'), utm_medium: v('utm_medium'), utm_campaign: v('utm_campaign')
       };
       fetch(C.SHEET_ENDPOINT, {

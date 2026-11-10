@@ -26,7 +26,7 @@ Payload enviado:
 ```json
 {
   "phone": "86999999999", "name": "Nome", "document": "12345678000190", "city": "Teresina", "state": "PI",
-  "company": "Empresa LTDA", "segment": "Centros de distribuição", "product": "Porta-pallets",
+  "company": "Empresa LTDA", "segment": "Centros de distribuição", "storage_height": "Até 8 metros", "product": "Porta-pallets",
   "utm_source": "google", "utm_medium": "cpc", "utm_campaign": "...", "utm_term": "...", "utm_content": "...",
   "gclid": "...", "gbraid": "...", "wbraid": "...", "fbclid": "...", "fbp": "fb.1...", "fbc": "fb.1...",
   "landing_page": "https://SEUDOMINIO.com.br/?utm_source=..."
@@ -55,7 +55,7 @@ Para testar: Gerenciador de Eventos > Testar eventos. Copie o código e abra a p
 
 ### Planilha Google (Fonil)
 
-Cada lead também vai para uma planilha Google, por um Apps Script (`SHEET_ENDPOINT` no bloco `window.SOACO`). O envio sai direto do navegador, sem passar pelo Nginx, com os campos `nome`, `whatsapp`, `uf`, `cidade`, `empresa`, `cnpj`, `segmento`, `gclid`, `utm_source`, `utm_medium` e `utm_campaign` (cada campo vira uma coluna, cada lead uma linha).
+Cada lead também vai para uma planilha Google, por um Apps Script (`SHEET_ENDPOINT` no bloco `window.SOACO`). O envio sai direto do navegador, sem passar pelo Nginx, com os campos `nome`, `whatsapp`, `uf`, `cidade`, `empresa`, `cnpj`, `segmento`, `altura`, `gclid`, `utm_source`, `utm_medium` e `utm_campaign` (cada campo vira uma coluna, cada lead uma linha).
 
 Mantenha `Content-Type: text/plain` e `mode: 'no-cors'`: com `application/json` o Apps Script bloqueia o envio por CORS. Por causa do `no-cors`, a página não consegue ver se a planilha gravou; uma falha de rede aparece no console como `[PLANILHA] falha ao enviar lead`. O envio não atrasa o redirecionamento ao WhatsApp.
 
