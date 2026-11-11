@@ -15,7 +15,8 @@ ENV NGINX_ENVSUBST_FILTER="^(CRM_|META_)"
 
 COPY nginx.conf /etc/nginx/templates/default.conf.template
 
-COPY index.html logo-so-aco.png logo-so-aco-transparente.png /usr/share/nginx/html/
+COPY index.html favicon.png logo-so-aco-transparente.webp /usr/share/nginx/html/
 COPY img/ /usr/share/nginx/html/img/
+COPY fonts/ /usr/share/nginx/html/fonts/
 
 EXPOSE 80
