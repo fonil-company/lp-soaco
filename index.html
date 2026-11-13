@@ -554,16 +554,9 @@ fbq('track', 'PageView');
             </select>
           </div>
         </div>
-        <div class="row">
-          <div class="field">
-            <label for="empresa">Empresa</label>
-            <input id="empresa" name="empresa" type="text" autocomplete="organization" placeholder="Nome da empresa">
-          </div>
-          <div class="field">
-            <label for="cnpj">CNPJ</label>
-            <input id="cnpj" name="cnpj" type="text" autocapitalize="characters" autocomplete="off" required placeholder="00.000.000/0000-00" maxlength="18">
-            <span class="err">CNPJ inválido</span>
-          </div>
+        <div class="field">
+          <label for="empresa">Empresa</label>
+          <input id="empresa" name="empresa" type="text" autocomplete="organization" placeholder="Nome da empresa">
         </div>
         <div class="field">
           <label for="segmento">Segmento</label>
@@ -737,30 +730,8 @@ fbq('track', 'PageView');
   });
   // Tira o destaque de erro assim que o campo é corrigido
   $('leadForm').addEventListener('change', function(e){
-    if (e.target.value && e.target.id !== 'cnpj') e.target.parentNode.classList.remove('invalid');
+    if (e.target.value) e.target.parentNode.classList.remove('invalid');
   });
-
-  // ---- Máscara e validação de CNPJ (numérico ou alfanumérico, padrão Receita 2026) ----
-  var cnpj = $('cnpj');
-  var cnpjClean = function(v){ return v.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,14); };
-  cnpj.addEventListener('input', function(){
-    var c = cnpjClean(cnpj.value), out = c.slice(0,2);
-    if (c.length > 2) out += '.' + c.slice(2,5);
-    if (c.length > 5) out += '.' + c.slice(5,8);
-    if (c.length > 8) out += '/' + c.slice(8,12);
-    if (c.length > 12) out += '-' + c.slice(12);
-    cnpj.value = out;
-    if (cnpj.parentNode.classList.contains('invalid') && cnpjValid(c)) cnpj.parentNode.classList.remove('invalid');
-  });
-  function cnpjValid(c){
-    if (!/^[A-Z0-9]{12}\d{2}$/.test(c) || /^(.)\1+$/.test(c)) return false;
-    var dv = function(n){
-      var s = 0, w = n - 7;
-      for (var i = 0; i < n; i++) { s += (c.charCodeAt(i) - 48) * w--; if (w < 2) w = 9; }
-      var r = s % 11; return r < 2 ? 0 : 11 - r;
-    };
-    return dv(12) === +c[12] && dv(13) === +c[13];
-  }
 
   // ---- Meta Conversions API ----
   // Dados pessoais vão com hash SHA-256 (padrão do Meta); o token fica no Nginx, não na página.
@@ -782,8 +753,7 @@ fbq('track', 'PageView');
       ln: names.length > 1 ? plain(names[names.length - 1]) : '',
       ct: plain(o.cidade),
       st: plain(o.uf),
-      country: 'br',
-      external_id: plain(o.cnpj)
+      country: 'br'
     };
     var keys = Object.keys(raw);
     return Promise.all(keys.map(function(k){ return sha256(raw[k]); })).then(function(h){
@@ -814,10 +784,9 @@ fbq('track', 'PageView');
   form.addEventListener('submit', function(e){
     e.preventDefault();
     var ok = true;
-    ['nome','whatsapp','cidade','uf','cnpj','segmento','altura'].forEach(function(id){
+    ['nome','whatsapp','cidade','uf','segmento','altura'].forEach(function(id){
       var el = $(id), bad = !el.value.trim() ||
-        (id === 'whatsapp' && el.value.replace(/\D/g,'').length < 10) ||
-        (id === 'cnpj' && !cnpjValid(cnpjClean(el.value)));
+        (id === 'whatsapp' && el.value.replace(/\D/g,'').length < 10);
       el.parentNode.classList.toggle('invalid', bad);
       if (bad && ok) { el.focus(); ok = false; }
     });
@@ -831,7 +800,6 @@ fbq('track', 'PageView');
       empresa: $('empresa').value.trim(),
       cidade: $('cidade').value.trim(),
       uf: $('uf').value,
-      cnpj: cnpjClean(cnpj.value),
       segmento: $('segmento').value,
       altura: $('altura').value,
       produto: 'Porta-pallets' // único produto da página; segue no CRM e no WhatsApp
@@ -840,7 +808,6 @@ fbq('track', 'PageView');
     var msg = 'Olá! Gostaria de solicitar um orçamento.\n\n' +
       '*Nome:* ' + data.nome + '\n' +
       (data.empresa ? '*Empresa:* ' + data.empresa + '\n' : '') +
-      '*CNPJ:* ' + cnpj.value + '\n' +
       '*Cidade:* ' + data.cidade + ' / ' + data.uf + '\n' +
       '*Segmento:* ' + data.segmento + '\n' +
       '*Altura disponível:* ' + data.altura + '\n' +
@@ -854,7 +821,7 @@ fbq('track', 'PageView');
 
     // CRM: o Nginx repassa /api/lead ao webhook (token fica no servidor, não na página)
     var lead = {
-      phone: phone, name: data.nome, document: data.cnpj, city: data.cidade, state: data.uf,
+      phone: phone, name: data.nome, city: data.cidade, state: data.uf,
       segment: data.segmento, storage_height: data.altura, product: data.produto
     };
     if (data.empresa) lead.company = data.empresa;
@@ -902,7 +869,7 @@ fbq('track', 'PageView');
       var f = form, v = function(n){ return f[n] ? f[n].value : ''; };
       var planilha = {
         nome: v('nome'), whatsapp: v('whatsapp'), uf: v('uf'), cidade: v('cidade'),
-        empresa: v('empresa'), cnpj: v('cnpj'), segmento: v('segmento'), altura: v('altura'),
+        empresa: v('empresa'), cnpj: '', segmento: v('segmento'), altura: v('altura'),
         gclid: v('gclid'), utm_source: v('utm_source'), utm_medium: v('utm_medium'), utm_campaign: v('utm_campaign')
       };
       fetch(C.SHEET_ENDPOINT, {
@@ -917,7 +884,7 @@ fbq('track', 'PageView');
     var metaCustom = { content_name: data.produto, content_category: data.segmento, lead_source: 'LP Google Ads' };
     if (typeof window.fbq === 'function') window.fbq('track', 'Lead', metaCustom, { eventID: eventId });
     metaCapi({
-      eventId: eventId, phone: phone, nome: data.nome, cidade: data.cidade, uf: data.uf, cnpj: data.cnpj,
+      eventId: eventId, phone: phone, nome: data.nome, cidade: data.cidade, uf: data.uf,
       fbp: fbp, fbc: fbc, custom: metaCustom
     }).then(done);
 
